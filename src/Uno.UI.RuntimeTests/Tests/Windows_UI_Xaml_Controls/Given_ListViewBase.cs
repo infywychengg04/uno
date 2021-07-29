@@ -1312,6 +1312,35 @@ namespace Uno.UI.RuntimeTests.Tests.Windows_UI_Xaml_Controls
 			Assert.AreEqual(null, list.SelectedItem);
 		}
 
+		[TestMethod]
+		public async Task When_DisplayMemberPath_Property_Changed()
+		{
+			var itemsSource = (new[] { "aaa", "bbb", "ccc", "ddd" }).Select(s => new When_DisplayMemberPath_Property_Changed_DataContext { Display = s }).ToArray();
+
+			var SUT = new ListView()
+			{
+				ItemContainerStyle = BasicContainerStyle,
+				DisplayMemberPath = "Display",
+				ItemsSource = itemsSource
+			};
+
+			WindowHelper.WindowContent = SUT;
+			await WindowHelper.WaitForLoaded(SUT);
+
+			var secondContainer = await WindowHelper.WaitForNonNull(() => SUT.ContainerFromIndex(1) as ListViewItem);
+			await WindowHelper.WaitForLoaded(secondContainer);
+
+			var tb = secondContainer.FindFirstChild<TextBlock>();
+			Assert.AreEqual("bbb", tb.Text);
+
+			foreach (var item in itemsSource)
+			{
+				item.Display = item.Display.ToUpperInvariant();
+			}
+
+			await WindowHelper.WaitForResultEqual("BBB", () => tb.Text);
+		}
+
 		private bool ApproxEquals(double value1, double value2) => Math.Abs(value1 - value2) <= 2;
 
 		private class When_Removed_From_Tree_And_Selection_TwoWay_Bound_DataContext : INotifyPropertyChanged
@@ -1331,6 +1360,26 @@ namespace Uno.UI.RuntimeTests.Tests.Windows_UI_Xaml_Controls
 					if (changing)
 					{
 						PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MySelection)));
+					}
+				}
+			}
+		}
+
+		private class When_DisplayMemberPath_Property_Changed_DataContext : INotifyPropertyChanged
+		{
+			private string _display;
+
+			public event PropertyChangedEventHandler PropertyChanged;
+
+			public string Display
+			{
+				get => _display;
+				set
+				{
+					if (value != _display)
+					{
+						_display = value;
+						PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Display)));
 					}
 				}
 			}
